@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { Box, Spinner, Text, useToast } from '@chakra-ui/react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
+// Define the container style for the map
 const containerStyle = {
   width: '100%',
   height: '500px'
 };
 
-// Sample locations to show nearby (will be offset from user's location)
+// Sample locations to show nearby (will be offset from a central point based on zip code)
 const SAMPLE_OFFSETS = [
   { lat: 0.01, lng: 0.01, name: "Acai Paradise" },
   { lat: -0.008, lng: 0.005, name: "Bowl Heaven" },
@@ -17,60 +18,58 @@ const SAMPLE_OFFSETS = [
   { lat: -0.005, lng: -0.003, name: "Fresh Bowl Co." }
 ];
 
-// Default center (will be replaced with user's location when available)
+// Default center (Los Angeles coordinates)
 const defaultCenter = {
   lat: 34.0522,
   lng: -118.2437
 };
 
-const LocationMap = () => {
+// Function to simulate fetching coordinates based on zip code
+const fetchCoordinatesByZip = async (zipCode) => {
+  // Simulated response for demonstration purposes
+  const zipCodeCoordinates = {
+    "90001": { lat: 33.9731, lng: -118.2487 },
+    "10001": { lat: 40.7128, lng: -74.0060 },
+    "94101": { lat: 37.7749, lng: -122.4194 }
+  };
+  return zipCodeCoordinates[zipCode] || defaultCenter;
+};
+
+const LocationMap = ({ zipCode }) => {
   const [currentLocation, setCurrentLocation] = useState(defaultCenter);
   const [isLoading, setIsLoading] = useState(true);
-  const [nearbyLocations, setNearbyLocations] = useState<Array<{lat: number, lng: number, name: string}>>([]);
+  const [nearbyLocations, setNearbyLocations] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setCurrentLocation(userLocation);
-          
-          // Generate sample nearby locations based on user's position
-          const nearby = SAMPLE_OFFSETS.map(offset => ({
-            lat: userLocation.lat + offset.lat,
-            lng: userLocation.lng + offset.lng,
-            name: offset.name
-          }));
-          setNearbyLocations(nearby);
-          setIsLoading(false);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          toast({
-            title: 'Location Error',
-            description: 'Unable to get your location. Showing default map view.',
-            status: 'warning',
-            duration: 5000,
-            isClosable: true,
-          });
-          setIsLoading(false);
-        }
-      );
-    } else {
-      toast({
-        title: 'Geolocation Not Supported',
-        description: 'Your browser does not support geolocation.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      setIsLoading(false);
-    }
-  }, [toast]);
+    const updateLocations = async () => {
+      try {
+        const location = await fetchCoordinatesByZip(zipCode);
+        setCurrentLocation(location);
+
+        // Generate sample nearby locations based on the fetched location
+        const nearby = SAMPLE_OFFSETS.map(offset => ({
+          lat: location.lat + offset.lat,
+          lng: location.lng + offset.lng,
+          name: offset.name
+        }));
+        setNearbyLocations(nearby);
+      } catch (error) {
+        console.error('Error fetching location:', error);
+        toast({
+          title: 'Location Error',
+          description: 'Unable to fetch location for the provided zip code. Showing default map view.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    updateLocations();
+  }, [zipCode, toast]);
 
   if (isLoading) {
     return (
