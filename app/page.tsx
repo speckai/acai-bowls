@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Heading, Text, VStack, Button } from "@chakra-ui/react";
+import Link from "next/link";
 import LocationMap from "./components/LocationMap";
 
 export default function Home() {
@@ -19,6 +20,11 @@ export default function Home() {
         <Box w="full" h="500px">
           <LocationMap />
         </Box>
+        <Link href="/locations" passHref>
+          <Button as="a" size="lg" colorScheme="purple" mt={4}>
+            Find Locations
+          </Button>
+        </Link>
       </VStack>
     </Box>
   );
